@@ -8,9 +8,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.udacity.vehicles.client.maps.MapsClient;
 import com.udacity.vehicles.client.prices.PriceClient;
 import com.udacity.vehicles.domain.Condition;
@@ -21,6 +21,9 @@ import com.udacity.vehicles.domain.manufacturer.Manufacturer;
 import com.udacity.vehicles.service.CarService;
 import java.net.URI;
 import java.util.Collections;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -33,6 +36,9 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import static org.assertj.core.api.Assertions.assertThat;
+
 
 /**
  * Implements testing of the CarController class.
@@ -91,12 +97,23 @@ public class CarControllerTest {
      */
     @Test
     public void listCars() throws Exception {
-        /**
-         * TODO: Add a test to check that the `get` method works by calling
-         *   the whole list of vehicles. This should utilize the car from `getCar()`
-         *   below (the vehicle will be the first in the list).
-         */
+        MvcResult response = mvc.perform(get(new URI("/cars")))
+                .andExpect(content().contentType("application/hal+json;charset=UTF-8"))
+                .andExpect(status().isOk()).andReturn();
 
+        // Get car from response
+        JSONObject result = new JSONObject(response.getResponse().getContentAsString());
+        JSONObject embedded = (JSONObject) result.get("_embedded");
+        JSONArray carList = (JSONArray) embedded.get("carList");
+        ObjectMapper mapper = new ObjectMapper();
+        JSONObject carJson = (JSONObject) carList.get(0);
+        carJson.remove("_links");
+        Car resultCar = mapper.readValue(carJson.toString(), Car.class);
+
+        // Compare car from result with expected car
+        Car car = getCar();
+        car.setId(1L);
+        assertThat(resultCar).isEqualToComparingFieldByFieldRecursively(car);
     }
 
     /**
@@ -105,10 +122,18 @@ public class CarControllerTest {
      */
     @Test
     public void findCar() throws Exception {
-        /**
-         * TODO: Add a test to check that the `get` method works by calling
-         *   a vehicle by ID. This should utilize the car from `getCar()` below.
-         */
+        MvcResult response = mvc.perform(get(new URI("/cars/1")))
+                .andExpect(content().contentType("application/hal+json;charset=UTF-8"))
+                .andExpect(status().isOk()).andReturn();
+
+        ObjectMapper mapper = new ObjectMapper();
+        JSONObject result = new JSONObject(response.getResponse().getContentAsString());
+        result.remove("_links");
+        Car resultCar = mapper.readValue(result.toString(), Car.class);
+        Car car = getCar();
+        car.setId(1L);
+        assertThat(resultCar).isEqualToComparingFieldByFieldRecursively(car);
+
     }
 
     /**
@@ -117,11 +142,9 @@ public class CarControllerTest {
      */
     @Test
     public void deleteCar() throws Exception {
-        /**
-         * TODO: Add a test to check whether a vehicle is appropriately deleted
-         *   when the `delete` method is called from the Car Controller. This
-         *   should utilize the car from `getCar()` below.
-         */
+        mvc.perform(delete(new URI("/cars/1")))
+                .andExpect(content().string(""))
+                .andExpect(status().isNoContent());
     }
 
     /**
