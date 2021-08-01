@@ -14,7 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
  * Implements a REST-based controller for the pricing service.
  */
 @RestController
-@RequestMapping("/services/price")
+@RequestMapping("/price")
 public class PricingController {
 
     /**
