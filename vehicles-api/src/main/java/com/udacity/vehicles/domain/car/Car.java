@@ -44,7 +44,7 @@ public class Car {
 
     @Valid
     @Embedded
-    private Location location = new Location(0d, 0d);
+    private Location location = new Location();
 
     @Transient
     private String price;

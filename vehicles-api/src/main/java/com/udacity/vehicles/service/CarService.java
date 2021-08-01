@@ -2,6 +2,7 @@ package com.udacity.vehicles.service;
 
 import com.udacity.vehicles.client.maps.MapsClient;
 import com.udacity.vehicles.client.prices.PriceClient;
+import com.udacity.vehicles.domain.Condition;
 import com.udacity.vehicles.domain.car.Car;
 import com.udacity.vehicles.domain.car.CarRepository;
 import java.util.List;
@@ -67,6 +68,10 @@ public class CarService {
                     .map(carToBeUpdated -> {
                         carToBeUpdated.setDetails(car.getDetails());
                         carToBeUpdated.setLocation(car.getLocation());
+                        Condition updatedCondition = car.getCondition();
+                        if (updatedCondition != null) {
+                            carToBeUpdated.setCondition(updatedCondition);
+                        }
                         return repository.save(carToBeUpdated);
                     }).orElseThrow(CarNotFoundException::new);
         }
@@ -79,16 +84,9 @@ public class CarService {
      * @param id the ID number of the car to delete
      */
     public void delete(Long id) {
-        /**
-         * TODO: Find the car by ID from the `repository` if it exists.
-         *   If it does not exist, throw a CarNotFoundException
-         */
+        Optional<Car> optionalCar = repository.findById(id);
+        optionalCar.orElseThrow(CarNotFoundException::new);
 
-
-        /**
-         * TODO: Delete the car from the repository.
-         */
-
-
+        repository.deleteById(id);
     }
 }
