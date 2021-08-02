@@ -1,12 +1,11 @@
 package com.udacity.vehicles.api;
 
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -71,9 +70,14 @@ public class CarControllerTest {
     public void setup() {
         Car car = getCar();
         car.setId(1L);
-        given(carService.save(any())).willReturn(car);
+        given(carService.save(argThat((Car argCar) -> argCar != null && argCar.getCondition() == Condition.USED))).willReturn(car);
+        given(carService.save(getCar())).willReturn(car);
         given(carService.findById(any())).willReturn(car);
         given(carService.list()).willReturn(Collections.singletonList(car));
+        Car newCar = getCar();
+        newCar.setCondition(Condition.NEW);
+        newCar.setId(1L);
+        given(carService.save((argThat((Car argCar) -> argCar != null && argCar.getCondition() == Condition.NEW)))).willReturn(newCar);
     }
 
     /**
@@ -145,6 +149,29 @@ public class CarControllerTest {
         mvc.perform(delete(new URI("/cars/1")))
                 .andExpect(content().string(""))
                 .andExpect(status().isNoContent());
+    }
+
+    /**
+     * Tests the updating of a single car by ID.
+     * @throws Exception if the update operation of a vehicle fails
+     */
+    @Test
+    public void updateCar() throws Exception {
+        Car car = getCar();
+        car.setCondition(Condition.NEW);
+
+        MvcResult response = mvc.perform(put(new URI("/cars/1"))
+                .content(json.write(car).getJson())
+                .contentType(MediaType.APPLICATION_JSON_UTF8)
+                .accept(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(status().isOk()).andReturn();
+
+        ObjectMapper mapper = new ObjectMapper();
+        JSONObject result = new JSONObject(response.getResponse().getContentAsString());
+        result.remove("_links");
+        car.setId(1L);
+        Car resultCar = mapper.readValue(result.toString(), Car.class);
+        assertThat(resultCar).isEqualToComparingFieldByFieldRecursively(car);
     }
 
     /**
